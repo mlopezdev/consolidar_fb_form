@@ -43,6 +43,53 @@ pip install -r requirements.txt
    - Se generará/actualizará `consolidated_customers.csv` con los datos unificados
    - Se mostrarán estadísticas del proceso en la consola
 
+## Proceso de Lectura de Archivos CSV
+
+El script implementa un proceso robusto para manejar archivos CSV con diferentes codificaciones y formatos:
+
+1. **Lectura Binaria y Detección de Codificación**:
+   ```python
+   def detect_encoding(file_path: str) -> str:
+       with open(file_path, 'rb') as file:
+           raw_data = file.read()
+       result = chardet.detect(raw_data)
+       return result['encoding']
+   ```
+   - Primero se lee el archivo en modo binario
+   - Se utiliza `chardet` para detectar automáticamente la codificación
+   - Esto permite manejar archivos UTF-8, UTF-16, Latin-1, etc.
+
+2. **Detección de Separadores**:
+   ```python
+   # Detectar el separador
+   first_line = content.split('\n')[0]
+   if '\t' in first_line:
+       sep = '\t'
+   elif ';' in first_line:
+       sep = ';'
+   else:
+       sep = ','
+   ```
+   - Se analiza la primera línea para detectar el separador
+   - Soporta tabulaciones, punto y coma, y comas
+   - Evita problemas con archivos exportados de diferentes fuentes
+
+3. **Manejo de BOM (Byte Order Mark)**:
+   - Se elimina el BOM automáticamente durante la normalización de columnas
+   - Previene problemas con archivos exportados desde Excel
+
+4. **Proceso de Lectura Segura**:
+   ```python
+   try:
+       encoding = detect_encoding(file_path)
+       with open(file_path, 'r', encoding=encoding) as f:
+           content = f.read()
+       df = pd.read_csv(io.StringIO(content), sep=sep)
+   ```
+   - Lectura en dos pasos para mayor control
+   - Uso de `StringIO` para procesar el contenido en memoria
+   - Manejo de errores robusto
+
 ## Manejo de Columnas
 
 El script normaliza automáticamente los siguientes nombres de columnas:
