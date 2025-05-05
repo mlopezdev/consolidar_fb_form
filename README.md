@@ -40,7 +40,7 @@ pip install -r requirements.txt
 
 3. **Resultados**:
    - Los archivos procesados se moverán a la carpeta `procesados/` con timestamp
-   - Se generará/actualizará `consolidated_customers.csv` con los datos unificados
+   - Se generará/actualizará `consolidated_customers.csv` con los datos del último procesamiento
    - Se mostrarán estadísticas del proceso en la consola
 
 ## Proceso de Lectura de Archivos CSV
@@ -120,8 +120,8 @@ El script normaliza automáticamente los siguientes nombres de columnas:
 ## Notas Importantes
 
 - Los archivos originales se conservan en la carpeta `procesados/` con timestamp
-- El script es idempotente: puede ejecutarse múltiples veces sin duplicar datos
-- Se recomienda hacer respaldo del archivo consolidado periódicamente
+- El archivo consolidado (`consolidated_customers.csv`) contiene solo los registros del último procesamiento
+- Se recomienda hacer respaldo del archivo consolidado periódicamente si se necesita mantener un historial
 
 ## Manejo de Errores
 
