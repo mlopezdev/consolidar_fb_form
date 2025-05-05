@@ -175,8 +175,6 @@ def process_csv_files() -> None:
             consolidated_df['phone_number'] = consolidated_df['phone_number'].astype(str).apply(normalize_phone_number)
         if 'email' in consolidated_df.columns:
             consolidated_df['email'] = consolidated_df['email'].astype(str).str.lower()
-        if 'name' in consolidated_df.columns:
-            consolidated_df['name'] = consolidated_df['name'].astype(str).str.lower()
     
     # Buscar todos los archivos CSV en el directorio actual
     csv_files = glob.glob('*.csv')
@@ -203,8 +201,6 @@ def process_csv_files() -> None:
                 df['phone_number'] = df['phone_number'].astype(str).apply(normalize_phone_number)
             if 'email' in df.columns:
                 df['email'] = df['email'].astype(str).str.lower()
-            if 'name' in df.columns:
-                df['name'] = df['name'].astype(str).str.lower()
             
             new_dfs.append(df)
             print(f"Archivo {file} procesado exitosamente")
@@ -231,18 +227,19 @@ def process_csv_files() -> None:
     
     # Si hay datos consolidados previos, verificar duplicados
     if not consolidated_df.empty:
-        # Eliminar duplicados basados en columnas clave
-        duplicate_columns = ['email', 'phone_number', 'name']
+        # Eliminar duplicados basados en email y teléfono
+        duplicate_columns = ['email', 'phone_number']
         available_columns = [col for col in duplicate_columns if col in new_data.columns]
         
         if not available_columns:
-            print("\nAdvertencia: No se encontraron columnas para identificar duplicados")
+            print("\nAdvertencia: No se encontraron columnas para identificar duplicados (email o phone_number)")
             available_columns = new_data.columns.tolist()
         
         # Encontrar duplicados con el archivo base
         duplicates = new_data.merge(consolidated_df, on=available_columns, how='inner')
         if not duplicates.empty:
             print(f"\nSe encontraron {len(duplicates)} registros duplicados con el archivo base")
+            print("Duplicados basados en:", ", ".join(available_columns))
             # Eliminar duplicados de los nuevos datos
             new_data = new_data.drop_duplicates(subset=available_columns)
             new_data = new_data[~new_data.index.isin(duplicates.index)]
@@ -251,7 +248,7 @@ def process_csv_files() -> None:
     consolidated_df = pd.concat([consolidated_df, new_data], ignore_index=True)
     
     # Eliminar duplicados finales
-    duplicate_columns = ['email', 'phone_number', 'name']
+    duplicate_columns = ['email', 'phone_number']
     available_columns = [col for col in duplicate_columns if col in consolidated_df.columns]
     
     if not available_columns:

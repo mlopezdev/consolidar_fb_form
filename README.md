@@ -113,7 +113,8 @@ El script normaliza automáticamente los siguientes nombres de columnas:
 
 3. **Manejo de Duplicados**:
    - Verifica duplicados contra el archivo consolidado existente
-   - Elimina duplicados basándose en email, teléfono y nombre
+   - Elimina duplicados basándose en email y teléfono
+   - Se considera duplicado si el email O el teléfono coinciden
    - Mantiene el registro más reciente en caso de duplicados
 
 ## Notas Importantes
