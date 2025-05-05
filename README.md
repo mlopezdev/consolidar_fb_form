@@ -1,47 +1,54 @@
-# Normalizador de Datos de Clientes
+# Normalización de Datos de Clientes
 
-Este script de Python está diseñado para procesar y consolidar datos de clientes desde múltiples archivos CSV, normalizando la información y eliminando duplicados.
+Este script procesa múltiples archivos CSV con datos de clientes, normaliza la información y maneja duplicados.
 
 ## Características
 
-- Procesa automáticamente archivos CSV con diferentes codificaciones (UTF-8, UTF-16, etc.)
-- Normaliza números de teléfono (elimina prefijos 'p:', espacios y caracteres especiales)
-- Unifica nombres de columnas entre diferentes archivos
-- Elimina registros duplicados basándose en email, teléfono y nombre
-- Mantiene un historial de archivos procesados
-- Genera un archivo consolidado con todos los registros únicos
+- Detecta automáticamente la codificación de los archivos CSV
+- Normaliza nombres de columnas (ej: 'telefono', 'teléfono', 'phone' → 'phone_number')
+- Limpia números de teléfono (elimina 'p:' y caracteres no numéricos)
+- Maneja archivos con diferentes separadores (coma o tabulador)
+- Mueve los archivos procesados a un directorio 'procesados' con timestamp
+- Genera dos archivos de salida:
+  - `consolidated_customers.csv`: Contiene todos los registros históricos
+  - `new_customers.csv`: Contiene solo los registros nuevos del último procesamiento
 
-## Requisitos
+## Detección de Duplicados
 
+El script identifica duplicados basándose en las siguientes columnas:
+- email
+- phone_number
+
+Si un registro nuevo tiene el mismo email o número de teléfono que uno existente en el archivo consolidado, se considera duplicado y solo se guarda en el archivo consolidado.
+
+## Uso
+
+1. Instalar las dependencias:
 ```bash
 pip install -r requirements.txt
 ```
 
-## Estructura del Proyecto
+2. Colocar los archivos CSV a procesar en el mismo directorio que el script
 
-```
-.
-├── normalize_customer_data.py   # Script principal
-├── requirements.txt            # Dependencias del proyecto
-├── consolidated_customers.csv  # Archivo consolidado (generado)
-└── procesados/                # Directorio de archivos procesados
+3. Ejecutar el script:
+```bash
+python normalize_customer_data.py
 ```
 
-## Uso
+## Estructura de Archivos
 
-1. **Preparación**:
-   - Coloca los archivos CSV a procesar en el directorio principal
-   - Los archivos pueden tener diferentes nombres de columnas y formatos
+- `normalize_customer_data.py`: Script principal
+- `requirements.txt`: Dependencias del proyecto
+- `consolidated_customers.csv`: Archivo con todos los registros históricos
+- `new_customers.csv`: Archivo con solo los registros nuevos del último procesamiento
+- `procesados/`: Directorio donde se mueven los archivos procesados
 
-2. **Ejecución**:
-   ```bash
-   python normalize_customer_data.py
-   ```
+## Notas
 
-3. **Resultados**:
-   - Los archivos procesados se moverán a la carpeta `procesados/` con timestamp
-   - Se generará/actualizará `consolidated_customers.csv` con los datos del último procesamiento
-   - Se mostrarán estadísticas del proceso en la consola
+- Los archivos procesados se mueven automáticamente al directorio 'procesados' con un timestamp
+- El script mantiene un historial completo en `consolidated_customers.csv`
+- Los registros nuevos (sin duplicados) se guardan en `new_customers.csv`
+- Se recomienda hacer backup del archivo consolidado antes de procesar nuevos archivos
 
 ## Proceso de Lectura de Archivos CSV
 

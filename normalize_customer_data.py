@@ -166,9 +166,19 @@ def process_csv_files() -> None:
     # Asegurar que existe el directorio de procesados
     processed_dir = ensure_processed_dir()
     
+    # Cargar el archivo base consolidado
+    consolidated_df = load_consolidated_base()
+    
+    # Asegurar tipos de datos consistentes en el archivo base
+    if not consolidated_df.empty:
+        if 'phone_number' in consolidated_df.columns:
+            consolidated_df['phone_number'] = consolidated_df['phone_number'].astype(str).apply(normalize_phone_number)
+        if 'email' in consolidated_df.columns:
+            consolidated_df['email'] = consolidated_df['email'].astype(str).str.lower()
+    
     # Buscar todos los archivos CSV en el directorio actual
     csv_files = glob.glob('*.csv')
-    csv_files = [f for f in csv_files if f not in ['consolidated_customers.csv']]  # Excluir el archivo consolidado
+    csv_files = [f for f in csv_files if f not in ['consolidated_customers.csv', 'new_customers.csv']]  # Excluir archivos de salida
     
     if not csv_files:
         print("No se encontraron archivos CSV nuevos para procesar.")
@@ -208,32 +218,48 @@ def process_csv_files() -> None:
         return
     
     # Concatenar los nuevos DataFrames
-    consolidated_df = pd.concat(new_dfs, ignore_index=True)
+    new_data = pd.concat(new_dfs, ignore_index=True)
     
-    # Mostrar información sobre las columnas
-    print("\nColumnas en los datos procesados:")
-    for col in consolidated_df.columns:
-        print(f"- {col}: {consolidated_df[col].nunique()} valores únicos")
+    # Mostrar información sobre las columnas nuevas
+    print("\nColumnas en los nuevos datos:")
+    for col in new_data.columns:
+        print(f"- {col}: {new_data[col].nunique()} valores únicos")
     
-    # Eliminar duplicados
-    duplicate_columns = ['email', 'phone_number']
-    available_columns = [col for col in duplicate_columns if col in consolidated_df.columns]
+    # Si hay datos consolidados previos, verificar duplicados
+    if not consolidated_df.empty:
+        # Eliminar duplicados basados en email y teléfono
+        duplicate_columns = ['email', 'phone_number']
+        available_columns = [col for col in duplicate_columns if col in new_data.columns]
+        
+        if not available_columns:
+            print("\nAdvertencia: No se encontraron columnas para identificar duplicados (email o phone_number)")
+            available_columns = new_data.columns.tolist()
+        
+        # Encontrar duplicados con el archivo base
+        duplicates = new_data.merge(consolidated_df, on=available_columns, how='inner')
+        if not duplicates.empty:
+            print(f"\nSe encontraron {len(duplicates)} registros duplicados con el archivo base")
+            print("Duplicados basados en:", ", ".join(available_columns))
+            # Eliminar duplicados de los nuevos datos
+            new_data = new_data.drop_duplicates(subset=available_columns)
+            new_data = new_data[~new_data.index.isin(duplicates.index)]
     
-    if not available_columns:
-        print("\nAdvertencia: No se encontraron columnas para identificar duplicados")
-        available_columns = consolidated_df.columns.tolist()
+    # Guardar los nuevos registros (sin duplicados)
+    new_output_file = 'new_customers.csv'
+    new_data.to_csv(new_output_file, index=False, encoding='utf-8')
+    print(f"\nArchivo de nuevos registros guardado como: {new_output_file}")
+    print(f"Total de registros nuevos únicos: {len(new_data)}")
     
-    original_count = len(consolidated_df)
-    consolidated_df = consolidated_df.drop_duplicates(subset=available_columns)
-    duplicates_removed = original_count - len(consolidated_df)
+    # Concatenar con el archivo base y eliminar duplicados
+    if not consolidated_df.empty:
+        consolidated_df = pd.concat([consolidated_df, new_data], ignore_index=True)
+        consolidated_df = consolidated_df.drop_duplicates(subset=available_columns)
     
-    # Guardar el resultado
-    output_file = 'consolidated_customers.csv'
-    consolidated_df.to_csv(output_file, index=False, encoding='utf-8')
-    print(f"\nArchivo consolidado guardado como: {output_file}")
-    print(f"Total de registros antes de eliminar duplicados: {original_count}")
-    print(f"Duplicados eliminados (basado en {', '.join(available_columns)}): {duplicates_removed}")
-    print(f"Total de registros únicos final: {len(consolidated_df)}")
+    # Guardar el archivo consolidado
+    consolidated_output_file = 'consolidated_customers.csv'
+    consolidated_df.to_csv(consolidated_output_file, index=False, encoding='utf-8')
+    print(f"\nArchivo consolidado guardado como: {consolidated_output_file}")
+    print(f"Total de registros en el archivo consolidado: {len(consolidated_df)}")
 
 if __name__ == "__main__":
     process_csv_files() 
